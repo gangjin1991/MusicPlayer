@@ -1,79 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:padding="10dp">
+
     <SeekBar
+        android:id="@+id/sb_music"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/seekBar"
-        android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true" />
+
     <TextView
+        android:id="@+id/tv_music_info"
         android:layout_width="match_parent"
         android:layout_height="25dp"
-        android:gravity="center"
-        android:id="@+id/musicinfo"
-        android:layout_below="@id/seekBar"
+        android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true" />
+        android:layout_below="@id/sb_music"
+        android:gravity="center" />
 
     <ImageView
-        android:id="@+id/iv_play_accelerometer"
+        android:id="@+id/iv_acceler"
         android:layout_width="30dp"
         android:layout_height="30dp"
-        android:onClick="changeAccelerometer"
-        android:background="@drawable/ic_alarm_on_black_24dp"
-        android:layout_below="@+id/musicinfo"
-        android:layout_toLeftOf="@+id/play_pause"
-        android:layout_toStartOf="@+id/play_pause"
+        android:layout_below="@+id/tv_music_info"
+        android:layout_marginEnd="39dp"
         android:layout_marginRight="39dp"
-        android:layout_marginEnd="39dp" />
+        android:layout_toLeftOf="@+id/iv_pause"
+        android:layout_toStartOf="@+id/iv_pause"
+        android:background="@drawable/ic_alarm_on_black_24dp"
+        android:onClick="changeAccelerometer" />
 
     <ImageView
         android:id="@+id/iv_play_mode"
         android:layout_width="30dp"
         android:layout_height="30dp"
-        android:background="@drawable/ic_shuffle_black_24dp"
-        android:onClick="changeMode"
-        android:layout_below="@+id/musicinfo"
-        android:layout_toRightOf="@+id/play_pause"
-        android:layout_toEndOf="@+id/play_pause"
+        android:layout_below="@+id/tv_music_info"
         android:layout_marginLeft="40dp"
-        android:layout_marginStart="40dp" />
+        android:layout_marginStart="40dp"
+        android:layout_toEndOf="@+id/iv_pause"
+        android:layout_toRightOf="@+id/iv_pause"
+        android:background="@drawable/ic_shuffle_black_24dp"
+        android:onClick="changeMode" />
 
     <ImageView
-        android:id="@+id/play_pause"
+        android:id="@+id/iv_pause"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:background="@drawable/play"
-        android:onClick="play_pause"
-        android:layout_gravity="center_horizontal"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="80dp" />
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="80dp"
+        android:background="@drawable/play"
+        android:onClick="play_pause" />
 
     <ImageView
-        android:id="@+id/next"
+        android:id="@+id/iv_next"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:background="@drawable/next"
-        android:onClick="next"
-        android:layout_gravity="right"
-        android:layout_below="@+id/iv_play_mode"
+        android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true" />
+        android:layout_below="@+id/iv_play_mode"
+        android:layout_gravity="right"
+        android:background="@drawable/next"
+        android:onClick="next" />
 
     <ImageView
-        android:id="@+id/previous"
+        android:id="@+id/iv_previous"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:background="@drawable/previous"
-        android:onClick="previous"
-        android:layout_alignTop="@+id/play_pause"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
+        android:layout_alignParentStart="true"
+        android:layout_alignTop="@+id/iv_pause"
+        android:background="@drawable/previous"
+        android:onClick="previous" />
 
 </RelativeLayout>

@@ -1,182 +1,168 @@
 package com.example.bafc.musicplayer;
 
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Handler;
+import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
+public class MusicActivity extends AppCompatActivity implements View.OnClickListener {
 
-public class MusicActivity extends AppCompatActivity {
-
-    public static final String KEY_PLAY_MODE="play mode";
-    public static final String KEY_PLAY_ACCLER="play accler";
-    private int[] modepic = {R.drawable.ic_shuffle_black_24dp,R.drawable.ic_repeat_black_24dp,R.drawable.ic_repeat_one_black_24dp};
+    public static final String KEY_PLAY_MODE = "play mode";
+    public static final String KEY_PLAY_ACCLER = "play accler";
+    private int[] modepic = {R.drawable.ic_shuffle_black_24dp, R.drawable.ic_repeat_black_24dp, R.drawable.ic_repeat_one_black_24dp};
     private int clicktime = 0;//accelerometer 切换
     private static int currentposition = -1;//当前播放列表里哪首音乐
-
-
-
-    private ArrayList<Map<String, Object>> listems = null;//需要显示在listview里的信息
-    public static ArrayList<MusicMedia> musicList = null; //音乐信息列表
+    private ArrayList<Map<String, Object>> musicData = null;//需要显示在listview里的信息
+    public static ArrayList<MusicMedia> musicList = new ArrayList<>();
+    ; //音乐信息列表
     private SharedPreferences sharedPreferences;
     private SharedPreferences.Editor edit;
     private Handler handler;
-    private float mLastY=-1;
-     ImageView mIvPlayMode;
-     ImageView mIvPlay_Accler;
-     ImageView mIvShare;
-     TextView mTvMusicInfo;
-     ListView mLvMusic;
-     ImageView mIvPause;
-     RelativeLayout mRlTop;
-     RelativeLayout mRlBottom;
-     SeekBar seekBarMusic;
+    private float mLastY = -1;
+    private ImageView mIvPlayMode;
+    private ImageView mIvPause;
+    private ImageView mIvNext;
+    private ImageView mIvPrevious;
+    private TextView mTvMusicInfo;
+    private Intent serviceIntent;
+    private ListView mLvLocalMusic;
+    private SeekBar mSbMusic;
+    private ImageView mIvAcceler;
+    public MusicService musicService;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Log.i("MusicPlayerService", "MusicActivity...onCreate........." + Thread.currentThread().hashCode());
-        ButterKnife.bind(this);
+//        ButterKnife.bind(this);
         initView();
-        init();
-
-
+        initData();
 
 
     }
 
     private void initView() {
-        mIvPlayMode=findViewById(R.id.iv_play_mode);
-        mIvPlay_Accler=findViewById(R.id.iv_play_accelerometer);
-        mIvShare=findViewById(R.id.iv_share);
-        mTvMusicInfo=findViewById(R.id.musicinfo);
-        mLvMusic=findViewById(R.id.musicListView);
-        mIvPause=findViewById(R.id.play_pause);
-        mRlTop=findViewById(R.id.top);
-        mRlBottom=findViewById(R.id.bottom);
-        seekBarMusic =findViewById(R.id.seekBar);
+        mLvLocalMusic = (ListView) findViewById(R.id.lv_local_music);
+        mSbMusic = (SeekBar) findViewById(R.id.sb_music);
+        mIvAcceler = (ImageView) findViewById(R.id.iv_acceler);
+        mIvPlayMode = (ImageView) findViewById(R.id.iv_play_mode);
+        mIvPause = (ImageView) findViewById(R.id.iv_pause);
+        mIvNext = (ImageView) findViewById(R.id.iv_next);
+        mIvPrevious = (ImageView) findViewById(R.id.iv_previous);
+        mTvMusicInfo = (TextView) findViewById(R.id.tv_music_info);
+
+        mIvAcceler.setOnClickListener(this);
+        mIvPlayMode.setOnClickListener(this);
+        mIvPause.setOnClickListener(this);
+        mIvNext.setOnClickListener(this);
+        mIvPrevious.setOnClickListener(this);
 
     }
 
-    private void init() {
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        edit = sharedPreferences.edit();
-        int playmode = sharedPreferences.getInt(KEY_PLAY_MODE, -1);
-        if (playmode==-1){//还未设置过
-            edit.putInt(KEY_PLAY_MODE,0).commit();
-        }else {
-            changeMode(playmode);
-        }
+    private void initData() {
+        handler = new Handler();
+        musicData = scanAllAudioFiles();
+//        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+//        edit = sharedPreferences.edit();
+//        int playmode = sharedPreferences.getInt(KEY_PLAY_MODE, -1);
+//        if (playmode == -1) {//还未设置过
+//            edit.putInt(KEY_PLAY_MODE, 0).commit();
+//        } else {
+//            changeMode(playmode);
+//        }
 
         //摇一摇
-        if(sharedPreferences.getInt(KEY_PLAY_ACCLER,0) == 0){
-            //默认摇一摇是打开的
-            clicktime = 0;
-            mIvPlay_Accler.setBackgroundResource(R.drawable.ic_alarm_on_black_24dp);
-        }else{
-            clicktime = 1;
-            mIvPlay_Accler.setBackgroundResource(R.drawable.ic_alarm_off_black_24dp);
-        }
+//        if(sharedPreferences.getInt(KEY_PLAY_ACCLER,0) == 0){
+//            //默认摇一摇是打开的
+//            clicktime = 0;
+//            mIvPlay_Accler.setBackgroundResource(R.drawable.ic_alarm_on_black_24dp);
+//        }else{
+//            clicktime = 1;
+//            mIvPlay_Accler.setBackgroundResource(R.drawable.ic_alarm_off_black_24dp);
+//        }
 
-        handler = new Handler();
-        mIvShare.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent();
-                intent.setAction(Intent.ACTION_SEND);
-                intent.putExtra(Intent.EXTRA_TEXT,"https://www.baidu.com/");
-                intent.setType("text/plain");
-                startActivity(Intent.createChooser(intent,"分享到"));
-            }
-        });
 
-        mLvMusic.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//        mIvShare.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                Intent intent = new Intent();
+//                intent.setAction(Intent.ACTION_SEND);
+//                intent.putExtra(Intent.EXTRA_TEXT,"https://www.baidu.com/");
+//                intent.setType("text/plain");
+//                startActivity(Intent.createChooser(intent,"分享到"));
+//            }
+//        });
+
+        mLvLocalMusic.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                currentposition=i;
-                playMusic(currentposition);
+                if (musicService != null) {
+                    musicService.playMusic(i);
+
+                }
             }
         });
 
-        mLvMusic.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-                if (mLastY==-1){
-                    mLastY = motionEvent.getRawY();
-                }
-                switch (motionEvent.getAction()){
-                    case MotionEvent.ACTION_MOVE:
-                        //判断上滑还是下滑
-                        if (motionEvent.getRawY() > mLastY) {
-                            //下滑显示bottom，隐藏top
-                            mRlTop.setVisibility(View.GONE);
-                            mRlBottom.setVisibility(View.VISIBLE);
-                        } else if (motionEvent.getRawY() < mLastY) {
-                            //上滑，显示top，隐藏bottom
-                            mRlTop.setVisibility(View.VISIBLE);
-//                            musicbotom.setVisibility(View.INVISIBLE);
-                            mRlBottom.setVisibility(View.GONE);
+//        mLvLocalMusic.setOnTouchListener(new View.OnTouchListener() {
+//            @Override
+//            public boolean onTouch(View view, MotionEvent motionEvent) {
+//                if (mLastY==-1){
+//                    mLastY = motionEvent.getRawY();
+//                }
+//                switch (motionEvent.getAction()){
+//                    case MotionEvent.ACTION_MOVE:
+//                        //判断上滑还是下滑
+//                        if (motionEvent.getRawY() > mLastY) {
+//                            //下滑显示bottom，隐藏top
+//                            mRlTop.setVisibility(View.GONE);
+//                            mRlBottom.setVisibility(View.VISIBLE);
+//                        } else if (motionEvent.getRawY() < mLastY) {
+//                            //上滑，显示top，隐藏bottom
+//                            mRlTop.setVisibility(View.VISIBLE);
+////                            musicbotom.setVisibility(View.INVISIBLE);
+//                            mRlBottom.setVisibility(View.GONE);
+//
+//                        } else {
+//                            // deltaY = 0.0 时
+//                            mRlTop.setVisibility(View.VISIBLE);
+//                            mRlBottom.setVisibility(View.VISIBLE);
+//                            mLastY = motionEvent.getRawY();
+//                            return false;//返回false即可响应click事件
+//                        }
+//                        mLastY = motionEvent.getRawY();
+//                        break;
+//                    default:
+//                        // reset
+//                        mLastY = -1;
+//                        mRlTop.setVisibility(View.VISIBLE);
+//                        mRlBottom.setVisibility(View.VISIBLE);
+//                        break;
+//                }
+//                return false;}
+//        });
 
-                        } else {
-                            // deltaY = 0.0 时
-                            mRlTop.setVisibility(View.VISIBLE);
-                            mRlBottom.setVisibility(View.VISIBLE);
-                            mLastY = motionEvent.getRawY();
-                            return false;//返回false即可响应click事件
-                        }
-                        mLastY = motionEvent.getRawY();
-                        break;
-                    default:
-                        // reset
-                        mLastY = -1;
-                        mRlTop.setVisibility(View.VISIBLE);
-                        mRlBottom.setVisibility(View.VISIBLE);
-                        break;
-                }
-                return false;}
-        });
-
-        musicList  = scanAllAudioFiles();
         //这里其实可以直接在扫描时返回 ArrayList<Map<String, Object>>()
-        listems = new ArrayList<Map<String, Object>>();
-        for (Iterator iterator = musicList.iterator(); iterator.hasNext();) {
-            Map<String, Object> map = new HashMap<String, Object>();
-            MusicMedia mp3Info = (MusicMedia) iterator.next();
-//            map.put("id",mp3Info.getId());
-            map.put("title", mp3Info.getTitle());
-            map.put("artist", mp3Info.getArtist());
-            map.put("album", mp3Info.getAlbum());
-//            map.put("albumid", mp3Info.getAlbumId());
-            map.put("duration", mp3Info.getTime());
-            map.put("size", mp3Info.getSize());
-            map.put("url", mp3Info.getUrl());
-
-            map.put("bitmap", R.drawable.musicfile);
-
-            listems.add(map);
-
-        }
 
         /*SimpleAdapter的参数说明
          * 第一个参数 表示访问整个android应用程序接口，基本上所有的组件都需要
@@ -190,29 +176,62 @@ public class MusicActivity extends AppCompatActivity {
          * */
         SimpleAdapter mSimpleAdapter = new SimpleAdapter(
                 this,
-                listems,
+                musicData,
                 R.layout.music_item,
-                new String[] {"bitmap","title","artist", "size","duration"},
-                new int[] {R.id.video_imageView,R.id.video_title,R.id.video_singer,R.id.video_size,R.id.video_duration}
+                new String[]{"bitmap", "title", "artist", "size", "duration"},
+                new int[]{R.id.video_imageView, R.id.video_title, R.id.video_singer, R.id.video_size, R.id.video_duration}
         );
         //listview里加载数据
-        mLvMusic.setAdapter(mSimpleAdapter);
+        mLvLocalMusic.setAdapter(mSimpleAdapter);
 
-
-
-
-
-
-
+        serviceIntent = new Intent();
+        serviceIntent.setAction("player");
+        serviceIntent.setPackage(getPackageName());
+        startService(serviceIntent);
+        bindService(serviceIntent, conn, Context.BIND_AUTO_CREATE);
 
 
     }
 
-    /*加载媒体库里的音频*/
-    public ArrayList<MusicMedia> scanAllAudioFiles(){
-        //生成动态数组，并且转载数据
-        ArrayList<MusicMedia> mylist = new ArrayList<MusicMedia>();
+    private ServiceConnection conn = new ServiceConnection() {
+        /** 获取服务对象时的操作 */
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+//            // TODO Auto-generated method stub
+            musicService = ((MusicService.MusicBinder) service).getService();
+            Log.i("MusicPlayerService", "MusicActivity...onServiceConnected.......");
+            //使用runnable + handler
+            handler.post(seekBarRunnable);
+        }
 
+        /** 无法获取到服务对象时的操作 */
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            // TODO Auto-generated method stub
+            musicService = null;
+        }
+
+    };
+
+    Runnable seekBarRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (musicService.getMediaPlayer() != null) {
+                Log.i("MusicPlayerService", "seekBarRunnable run......." + musicService.getMediaPlayer().getDuration() + " " + musicService.getProgress());
+                mSbMusic.setMax(musicService.getMediaPlayer().getDuration());
+                mSbMusic.setProgress(musicService.getProgress());
+                mTvMusicInfo.setText("(Click Me)  " + musicService.getMusicMedia().getTitle() + "       " +
+                        musicService.toTime(musicService.getProgress()) +
+                        "  / " + musicService.toTime(musicService.getMediaPlayer().getDuration()));
+                handler.postDelayed(seekBarRunnable, 1000);//
+            }
+        }
+    };
+
+    /*加载媒体库里的音频*/
+    private ArrayList<Map<String, Object>> scanAllAudioFiles() {
+
+        ArrayList<Map<String, Object>> musicData = new ArrayList<>();
         /*查询媒体数据库
         参数分别为（路径，要查询的列名，条件语句，条件参数，排序）
         视频：MediaStore.Video.Media.EXTERNAL_CONTENT_URI
@@ -221,7 +240,7 @@ public class MusicActivity extends AppCompatActivity {
          */
         Cursor cursor = getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, null, null, MediaStore.Audio.Media.DEFAULT_SORT_ORDER);
         //遍历媒体数据库
-        if(cursor.moveToFirst()){
+        if (cursor.moveToFirst()) {
             while (!cursor.isAfterLast()) {
                 //歌曲编号
                 int id = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
@@ -240,7 +259,7 @@ public class MusicActivity extends AppCompatActivity {
                 Long size = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE));
 
 
-                if (size >1024*800){//大于800K
+                if (size > 1024 * 800) {//大于800K
                     MusicMedia musicMedia = new MusicMedia();
                     musicMedia.setId(id);
                     musicMedia.setArtist(artist);
@@ -250,28 +269,41 @@ public class MusicActivity extends AppCompatActivity {
                     musicMedia.setUrl(url);
                     musicMedia.setAlbum(album);
                     musicMedia.setAlbumId(albumId);
+                    musicList.add(musicMedia);
 
-                    mylist.add(musicMedia);
+
+                    HashMap<String, Object> musicMap = new HashMap<>();
+//            map.put("id",mp3Info.getId());
+                    musicMap.put("title", musicMedia.getTitle());
+                    musicMap.put("artist", musicMedia.getArtist());
+                    musicMap.put("album", musicMedia.getAlbum());
+//            map.put("albumid", mp3Info.getAlbumId());
+                    musicMap.put("duration", musicMedia.getTime());
+                    musicMap.put("size", musicMedia.getSize());
+                    musicMap.put("url", musicMedia.getUrl());
+                    musicMap.put("bitmap", R.drawable.musicfile);
+                    musicData.add(musicMap);
 
                 }
                 cursor.moveToNext();
             }
         }
-        return mylist;
+        return musicData;
     }
 
 
     private void playMusic(int currentposition) {
 
 
-
-
-
-
     }
 
     private void changeMode(int playmode) {
-        edit.putInt(KEY_PLAY_MODE,playmode).commit();
+        edit.putInt(KEY_PLAY_MODE, playmode).commit();
         mIvPlayMode.setBackgroundResource(modepic[playmode]);
+    }
+
+    @Override
+    public void onClick(View view) {
+
     }
 }
