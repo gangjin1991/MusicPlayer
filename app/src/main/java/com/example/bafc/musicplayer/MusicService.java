@@ -6,6 +6,7 @@ import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
+
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -22,14 +23,14 @@ public class MusicService extends Service {
     public static final int MSG_RESTART = 0;//service启动后的播放
     public static final int MSG_PAUSE = 2;
 
-//    public  MediaPlayer mediaPlayer = null;
+    //    public  MediaPlayer mediaPlayer = null;
     private ArrayList<MusicMedia> musicList;
     //第几首音乐
-    public int curPosition=0;
+    public int curPosition = 0;
     private MusicMedia musicMedia;
     private String url;
     //默认进度条当前位置
-    private int progress =0;
+    private int progress = 0;
     private MediaPlayer mediaPlayer;
 
 
@@ -40,7 +41,7 @@ public class MusicService extends Service {
             mediaPlayer = new MediaPlayer();
         }
         musicList = MusicActivity.musicList;
-        musicMedia=musicList.get(0);
+        musicMedia = musicList.get(0);
         initmediPlayer(0);
         //        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
 //            @Override
@@ -51,16 +52,16 @@ public class MusicService extends Service {
 
     }
 
-    public void initmediPlayer(int index ) {
+    public void initmediPlayer(int index) {
         //获取文件路径
         try {
             //此处的两个方法需要捕获IO异常
             //设置音频文件到MediaPlayer对象中
-            if (mediaPlayer!=null){
+            if (mediaPlayer != null) {
                 mediaPlayer.setDataSource(musicList.get(index).getUrl());
                 //让MediaPlayer对象准备
                 mediaPlayer.prepare();
-                Log.i(TAG, "url:"+url + "......." + Thread.currentThread().getName());
+                Log.i(TAG, "url:" + url + "......." + Thread.currentThread().getName());
             }
 
 
@@ -152,8 +153,8 @@ public class MusicService extends Service {
     }
 
     public void playMusic(int i) {
-        musicMedia=musicList.get(i);
-        if (mediaPlayer!=null){
+        musicMedia = musicList.get(i);
+        if (mediaPlayer != null) {
             mediaPlayer.reset();
             initmediPlayer(i);
             if (!mediaPlayer.isPlaying()) {
@@ -163,6 +164,13 @@ public class MusicService extends Service {
 
         }
 
+    }
+    public void pauseMusic(){
+        if (mediaPlayer.isPlaying()){
+            mediaPlayer.pause();
+        }else {
+            mediaPlayer.start();
+        }
     }
 
     public class MusicBinder extends Binder {
@@ -187,12 +195,12 @@ public class MusicService extends Service {
     }
 
 
-    public  MediaPlayer getMediaPlayer() {
+    public MediaPlayer getMediaPlayer() {
         return mediaPlayer;
     }
 
     //得到 当前播放第几个音乐
-    public int getCurposition(){
+    public int getCurposition() {
         return curPosition;
     }
 
@@ -201,7 +209,7 @@ public class MusicService extends Service {
         return musicMedia;
     }
 
-    public String toTime(int time){
+    public String toTime(int time) {
         time /= 1000;
         int minute = time / 60;
         int hour = minute / 60;

@@ -12,6 +12,7 @@ import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.SwitchCompat;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -20,6 +21,7 @@ import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -118,8 +120,8 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 if (musicService != null) {
-                    musicService.playMusic(i);
-
+                    currentposition = i;
+                    musicService.playMusic(currentposition);
                 }
             }
         });
@@ -304,6 +306,45 @@ public class MusicActivity extends AppCompatActivity implements View.OnClickList
 
     @Override
     public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.iv_next:
+                if (currentposition < musicList.size() - 2) {
+                    currentposition += 1;
+                    musicService.playMusic(currentposition);
+                } else {
+                    currentposition = musicList.size() - 1;
+                    musicService.playMusic(currentposition);
+                }
+                break;
+            case R.id.iv_previous:
+                if (currentposition > 0) {
+                    currentposition -= 1;
+                    musicService.playMusic(currentposition);
+                } else {
+                    currentposition = 0;
+                    musicService.playMusic(currentposition);
+                }
+                break;
+            case R.id.iv_pause:
+                if (isPlaying) {
+                    mIvPause.setBackgroundResource(R.drawable.play);
+                } else {
+                    mIvPause.setBackgroundResource(R.drawable.pause);
+                }
+                isPlaying = !isPlaying;
 
+                break;
+            default:
+                break;
+
+
+        }
+
+    }
+
+    private boolean isPlaying = true;
+
+    private void showInfo(String info) {
+        Toast.makeText(this, info, Toast.LENGTH_SHORT).show();
     }
 }
